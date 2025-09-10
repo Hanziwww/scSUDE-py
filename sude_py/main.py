@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sude import sude
+from .sude import sude
 import time
 import matplotlib.pyplot as plt
 

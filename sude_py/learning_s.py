@@ -3,9 +3,9 @@ from scipy.sparse import diags
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import eigs
 from scipy.spatial.distance import cdist
-from init_pca import init_pca
-from pca import pca
-from mds import mds
+from .init_pca import init_pca
+from .pca import pca
+from .mds import mds
 import numpy as np
 
 

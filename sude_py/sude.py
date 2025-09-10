@@ -1,11 +1,11 @@
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import NearestNeighbors
-from init_pca import init_pca
-from pps import pps
-from learning_s import learning_s
-from learning_l import learning_l
-from opt_scale import opt_scale
-from clle import clle
+from .init_pca import init_pca
+from .pps import pps
+from .learning_s import learning_s
+from .learning_l import learning_l
+from .opt_scale import opt_scale
+from .clle import clle
 import numpy as np
 
 
@@ -17,7 +17,8 @@ def sude(
         large=False,
         initialize='le',
         agg_coef=1.2,
-        T_epoch=50
+        T_epoch=50,
+        precomputed_knn=None
 ):
     """
     This function returns representation of the N by D matrix X in the lower-dimensional space. Each row in X
@@ -47,10 +48,16 @@ def sude(
                    Default: 1.2
     'T_epoch'      - Maximum number of epochs to take.
                    Default: 50
+    'precomputed_knn' - Optional N by (k1+1) integer matrix. When provided, it will be used directly for
+                   PPS (the first column should be self indices), and duplicate removal will be skipped
+                   to preserve index alignment with the kNN graph.
 
     """
-    # Remove duplicate observations
-    X, orig_id = np.unique(X, axis=0, return_inverse=True)
+    # Remove duplicate observations only when we will compute kNN internally
+    if precomputed_knn is None:
+        X, orig_id = np.unique(X, axis=0, return_inverse=True)
+    else:
+        orig_id = np.arange(X.shape[0])
 
     # Obtain size and dimension of data
     n, dim = X.shape
@@ -61,11 +68,14 @@ def sude(
 
     # Perform PPS to obtain the landmarks
     if k1 > 0:
-        if n > 5000 and dim > 50:
-            xx = init_pca(X, no_dims, 0.8)
-            get_knn = NearestNeighbors(n_neighbors=k1 + 1).fit(xx).kneighbors(xx, return_distance=False)
+        if precomputed_knn is not None:
+            get_knn = precomputed_knn
         else:
-            get_knn = NearestNeighbors(n_neighbors=k1 + 1).fit(X).kneighbors(X, return_distance=False)
+            if n > 5000 and dim > 50:
+                xx = init_pca(X, no_dims, 0.8)
+                get_knn = NearestNeighbors(n_neighbors=k1 + 1).fit(xx).kneighbors(xx, return_distance=False)
+            else:
+                get_knn = NearestNeighbors(n_neighbors=k1 + 1).fit(X).kneighbors(X, return_distance=False)
         _, rnn = np.unique(get_knn, return_counts=True)
         id_samp = pps(get_knn, rnn, 1)
     else:
